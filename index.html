@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JokiSoal Manual</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-800 transition duration-300" id="body">
+  <!-- Landing Page -->
+  <section id="landingPage" class="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 text-center">
+    <h1 class="text-4xl font-bold mb-2 text-blue-700">🎓 JokiSoal Manual</h1>
+    <p class="text-lg mb-6 text-gray-700 italic">Buat, simpan, dan latihan soal dengan mudah.</p>
+    <button onclick="showLogin()" class="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">Mulai Sekarang</button>
+  </section>
+
+  <!-- Login Dummy -->
+  <section id="loginPage" class="hidden h-screen flex flex-col items-center justify-center bg-white">
+    <h2 class="text-2xl font-semibold mb-4 text-blue-700">Masuk ke JokiSoal Manual</h2>
+    <input id="usernameInput" type="text" placeholder="Masukkan nama kamu..." class="border border-blue-300 rounded-lg p-3 w-64 text-center focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <button onclick="loginUser()" class="mt-4 px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">Masuk</button>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="hidden min-h-screen bg-gray-50 p-4 md:p-8">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-blue-700">Halo, <span id="usernameDisplay"></span> 👋</h2>
+      <div>
+        <button onclick="toggleTheme()" class="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 mr-2">🌓</button>
+        <button onclick="logoutUser()" class="px-3 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">Keluar</button>
+      </div>
+    </div>
+
+    <!-- Input Soal -->
+    <div class="bg-white rounded-2xl shadow-md p-6 mb-8">
+      <h3 class="text-xl font-semibold text-blue-600 mb-4">Tambah Soal Baru</h3>
+      <div class="grid md:grid-cols-2 gap-4">
+        <input id="materiInput" type="text" placeholder="Materi..." class="border rounded-lg p-2">
+        <input id="pertanyaanInput" type="text" placeholder="Pertanyaan..." class="border rounded-lg p-2">
+        <input id="opsiA" type="text" placeholder="Opsi A" class="border rounded-lg p-2">
+        <input id="opsiB" type="text" placeholder="Opsi B" class="border rounded-lg p-2">
+        <input id="opsiC" type="text" placeholder="Opsi C" class="border rounded-lg p-2">
+        <input id="opsiD" type="text" placeholder="Opsi D" class="border rounded-lg p-2">
+        <input id="opsiE" type="text" placeholder="Opsi E" class="border rounded-lg p-2">
+        <input id="kunciJawaban" type="text" placeholder="Kunci Jawaban (A-E)" maxlength="1" class="border rounded-lg p-2 uppercase">
+        <input id="gambarSoal" type="file" accept="image/*" class="border rounded-lg p-2">
+      </div>
+      <button onclick="tambahSoal()" class="mt-4 px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700">Tambah Soal</button>
+    </div>
+
+    <!-- Tombol Ekstra -->
+    <div class="flex flex-wrap gap-3 mb-6">
+      <button onclick="masukModeLatihan()" class="bg-green-500 text-white px-5 py-2 rounded-lg hover:bg-green-600">🎯 Mode Latihan</button>
+      <button onclick="eksporSoal()" class="bg-yellow-500 text-white px-5 py-2 rounded-lg hover:bg-yellow-600">⬇️ Ekspor JSON</button>
+      <input type="file" id="imporFile" onchange="imporSoal(event)" class="hidden">
+      <button onclick="document.getElementById('imporFile').click()" class="bg-indigo-500 text-white px-5 py-2 rounded-lg hover:bg-indigo-600">⬆️ Impor JSON</button>
+      <button onclick="eksporPDF()" class="bg-pink-500 text-white px-5 py-2 rounded-lg hover:bg-pink-600">📄 Ekspor PDF</button>
+      <button onclick="resetSemuaData()" class="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600">🗑️ Reset Semua</button>
+    </div>
+
+    <!-- Daftar Soal -->
+    <div id="daftarSoalContainer" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- Mode Latihan -->
+  <section id="modeLatihan" class="hidden h-screen flex flex-col items-center justify-center bg-white text-center p-4">
+    <h2 class="text-2xl font-semibold mb-4 text-blue-700">Mode Latihan</h2>
+    <div id="latihanContainer" class="w-full md:w-1/2"></div>
+    <button onclick="keluarLatihan()" class="mt-6 px-5 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Keluar</button>
+  </section>
+
+  <!-- Grafik Skor -->
+  <section id="hasilLatihan" class="hidden min-h-screen flex flex-col items-center justify-center bg-blue-50 p-6">
+    <h2 class="text-2xl font-semibold mb-4 text-blue-700">📊 Hasil Latihan</h2>
+    <canvas id="chartHasil" width="400" height="300"></canvas>
+    <button onclick="kembaliKeDashboard()" class="mt-6 px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700">Kembali ke Dashboard</button>
+  </section>
+  <script>
+    // ==== Variabel & Inisialisasi ====
+    let daftarSoal = JSON.parse(localStorage.getItem("daftarSoal")) || [];
+    let userLogin = localStorage.getItem("username") || "";
+    let darkMode = false;
+    let soalAktifIndex = 0;
+    let skorBenar = 0;
+
+    // ==== Navigasi Halaman ====
+    function showLogin() {
+      document.getElementById("landingPage").classList.add("hidden");
+      document.getElementById("loginPage").classList.remove("hidden");
+    }
+
+    function loginUser() {
+      const nama = document.getElementById("usernameInput").value.trim();
+      if (!nama) return alert("Masukkan nama dulu ya!");
+      localStorage.setItem("username", nama);
+      userLogin = nama;
+      tampilDashboard();
+    }
+
+    function tampilDashboard() {
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+      document.getElementById("usernameDisplay").innerText = userLogin;
+      renderDaftarSoal();
+    }
+
+    function logoutUser() {
+      localStorage.removeItem("username");
+      location.reload();
+    }
+
+    if (userLogin) tampilDashboard();
+
+    // ==== Tema Gelap/Terang ====
+    function toggleTheme() {
+      const body = document.getElementById("body");
+      darkMode = !darkMode;
+      if (darkMode) {
+        body.classList.add("bg-gray-900", "text-gray-100");
+        body.classList.remove("bg-gray-50", "text-gray-800");
+      } else {
+        body.classList.remove("bg-gray-900", "text-gray-100");
+        body.classList.add("bg-gray-50", "text-gray-800");
+      }
+    }
+
+    // ==== Tambah Soal ====
+    function tambahSoal() {
+      const materi = document.getElementById("materiInput").value.trim();
+      const pertanyaan = document.getElementById("pertanyaanInput").value.trim();
+      const opsiA = document.getElementById("opsiA").value.trim();
+      const opsiB = document.getElementById("opsiB").value.trim();
+      const opsiC = document.getElementById("opsiC").value.trim();
+      const opsiD = document.getElementById("opsiD").value.trim();
+      const opsiE = document.getElementById("opsiE").value.trim();
+      const kunci = document.getElementById("kunciJawaban").value.trim().toUpperCase();
+
+      const gambarInput = document.getElementById("gambarSoal");
+      let gambarBase64 = "";
+
+      if (!materi || !pertanyaan || !opsiA || !opsiB || !opsiC || !opsiD || !opsiE || !kunci) {
+        alert("Lengkapi semua kolom terlebih dahulu!");
+        return;
+      }
+
+      const file = gambarInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          gambarBase64 = e.target.result;
+          simpanSoal(materi, pertanyaan, opsiA, opsiB, opsiC, opsiD, opsiE, kunci, gambarBase64);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        simpanSoal(materi, pertanyaan, opsiA, opsiB, opsiC, opsiD, opsiE, kunci, "");
+      }
+    }
+
+    function simpanSoal(materi, pertanyaan, A, B, C, D, E, kunci, gambar) {
+      const soalBaru = { materi, pertanyaan, opsi: { A, B, C, D, E }, kunci, gambar };
+      daftarSoal.push(soalBaru);
+      localStorage.setItem("daftarSoal", JSON.stringify(daftarSoal));
+      resetInput();
+      renderDaftarSoal();
+    }
+
+    function resetInput() {
+      ["materiInput","pertanyaanInput","opsiA","opsiB","opsiC","opsiD","opsiE","kunciJawaban","gambarSoal"]
+        .forEach(id => document.getElementById(id).value = "");
+    }
+
+    // ==== Render Daftar Soal ====
+    function renderDaftarSoal() {
+      const container = document.getElementById("daftarSoalContainer");
+      container.innerHTML = "";
+      daftarSoal.forEach((soal, i) => {
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-xl shadow p-4 hover:shadow-lg transition";
+        card.innerHTML = `
+          <h4 class="font-semibold text-blue-600 mb-2">${soal.materi}</h4>
+          <p class="mb-2">${soal.pertanyaan}</p>
+          ${soal.gambar ? `<img src="${soal.gambar}" alt="Gambar Soal" class="mb-2 rounded-lg">` : ""}
+          <ul class="text-sm mb-2">
+            ${Object.entries(soal.opsi).map(([k, v]) => `<li><b>${k}.</b> ${v}</li>`).join("")}
+          </ul>
+          <div class="flex justify-between text-sm">
+            <button onclick="editSoal(${i})" class="text-blue-500 hover:underline">Edit</button>
+            <button onclick="hapusSoal(${i})" class="text-red-500 hover:underline">Hapus</button>
+            <button onclick="lihatJawaban(${i})" class="text-green-500 hover:underline">Lihat Kunci</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function editSoal(i) {
+      const soal = daftarSoal[i];
+      document.getElementById("materiInput").value = soal.materi;
+      document.getElementById("pertanyaanInput").value = soal.pertanyaan;
+      document.getElementById("opsiA").value = soal.opsi.A;
+      document.getElementById("opsiB").value = soal.opsi.B;
+      document.getElementById("opsiC").value = soal.opsi.C;
+      document.getElementById("opsiD").value = soal.opsi.D;
+      document.getElementById("opsiE").value = soal.opsi.E;
+      document.getElementById("kunciJawaban").value = soal.kunci;
+      daftarSoal.splice(i, 1);
+      localStorage.setItem("daftarSoal", JSON.stringify(daftarSoal));
+      renderDaftarSoal();
+    }
+
+    function hapusSoal(i) {
+      if (confirm("Yakin mau hapus soal ini?")) {
+        daftarSoal.splice(i, 1);
+        localStorage.setItem("daftarSoal", JSON.stringify(daftarSoal));
+        renderDaftarSoal();
+      }
+    }
+
+    function lihatJawaban(i) {
+      alert("Kunci jawaban: " + daftarSoal[i].kunci);
+    }
+
+    // ==== Reset Semua Data ====
+    function resetSemuaData() {
+      if (confirm("Yakin ingin menghapus semua data soal dan login?")) {
+        localStorage.clear();
+        location.reload();
+      }
+    }
+
+    // ==== Mode Latihan ====
+    function masukModeLatihan() {
+      if (daftarSoal.length === 0) {
+        alert("Belum ada soal untuk latihan!");
+        return;
+      }
+      soalAktifIndex = 0;
+      skorBenar = 0;
+      document.getElementById("dashboard").classList.add("hidden");
+      document.getElementById("modeLatihan").classList.remove("hidden");
+      tampilSoalLatihan();
+    }
+
+    function tampilSoalLatihan() {
+      const soal = daftarSoal[soalAktifIndex];
+      const container = document.getElementById("latihanContainer");
+      container.innerHTML = `
+        <div class="bg-white rounded-xl shadow-md p-4">
+          <h3 class="font-semibold mb-2">${soal.materi}</h3>
+          <p class="mb-2">${soal.pertanyaan}</p>
+          ${soal.gambar ? `<img src="${soal.gambar}" alt="Gambar Soal" class="mb-2 rounded-lg">` : ""}
+          <div id="opsiContainer" class="space-y-2">
+            ${Object.entries(soal.opsi)
+              .map(([k, v]) => `<button onclick="jawab('${k}')" class="block w-full text-left p-2 border rounded-lg hover:bg-blue-100">${k}. ${v}</button>`)
+              .join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function jawab(pilihan) {
+      const soal = daftarSoal[soalAktifIndex];
+      if (pilihan === soal.kunci) {
+        skorBenar++;
+        alert("✅ Benar!");
+      } else {
+        alert("❌ Salah! Kunci: " + soal.kunci);
+      }
+      soalAktifIndex++;
+      if (soalAktifIndex < daftarSoal.length) {
+        tampilSoalLatihan();
+      } else {
+        tampilHasilLatihan();
+      }
+    }
+    <!-- === BLOK 3: FITUR LANJUTAN (EXPORT, IMPORT, LATIHAN, CHART) === -->
+
+    <!-- Bagian Mode Latihan -->
+    <div id="modeLatihan" class="hidden p-6">
+      <h2 class="text-2xl font-bold text-blue-600 mb-4 text-center">Mode Latihan</h2>
+      <div id="latihanContainer" class="text-center"></div>
+      <div id="skorAkhir" class="hidden mt-6 text-xl font-semibold text-green-600"></div>
+      <div id="chartContainer" class="hidden mt-6">
+        <canvas id="hasilChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Script utama -->
+    <script>
+      const daftarSoal = JSON.parse(localStorage.getItem('daftarSoal')) || [];
+
+      const form = document.getElementById('formSoal');
+      const daftarContainer = document.getElementById('daftarSoal');
+      const modeLatihan = document.getElementById('modeLatihan');
+      const latihanContainer = document.getElementById('latihanContainer');
+      const skorAkhir = document.getElementById('skorAkhir');
+      const chartContainer = document.getElementById('chartContainer');
+
+      let indexLatihan = 0;
+      let skor = 0;
+
+      // === SIMPAN SOAL ===
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const materi = document.getElementById('materi').value.trim();
+        const pertanyaan = document.getElementById('pertanyaan').value.trim();
+        const opsi = [
+          document.getElementById('opsiA').value,
+          document.getElementById('opsiB').value,
+          document.getElementById('opsiC').value,
+          document.getElementById('opsiD').value,
+          document.getElementById('opsiE').value,
+        ];
+        const kunci = document.getElementById('kunci').value;
+
+        if (!materi || !pertanyaan || opsi.some(o => !o)) {
+          alert('Lengkapi semua kolom terlebih dahulu!');
+          return;
+        }
+
+        daftarSoal.push({ materi, pertanyaan, opsi, kunci });
+        localStorage.setItem('daftarSoal', JSON.stringify(daftarSoal));
+        form.reset();
+        tampilkanDaftarSoal();
+      });
+
+      // === TAMPILKAN DAFTAR SOAL ===
+      function tampilkanDaftarSoal() {
+        daftarContainer.innerHTML = '';
+        daftarSoal.forEach((s, i) => {
+          const card = document.createElement('div');
+          card.className = 'p-4 bg-white rounded-lg shadow hover:shadow-lg transition';
+          card.innerHTML = `
+            <h3 class="text-lg font-semibold text-blue-600">${s.materi}</h3>
+            <p class="mt-2">${s.pertanyaan}</p>
+            <div class="mt-2 text-sm text-gray-700">Kunci: <b>${s.kunci}</b></div>
+            <div class="mt-3 flex gap-2">
+              <button onclick="editSoal(${i})" class="bg-yellow-400 text-white px-3 py-1 rounded">Edit</button>
+              <button onclick="hapusSoal(${i})" class="bg-red-500 text-white px-3 py-1 rounded">Hapus</button>
+            </div>
+          `;
+          daftarContainer.appendChild(card);
+        });
+      }
+
+      tampilkanDaftarSoal();
+
+      // === HAPUS & EDIT SOAL ===
+      function hapusSoal(i) {
+        if (confirm('Yakin ingin menghapus soal ini?')) {
+          daftarSoal.splice(i, 1);
+          localStorage.setItem('daftarSoal', JSON.stringify(daftarSoal));
+          tampilkanDaftarSoal();
+        }
+      }
+
+      function editSoal(i) {
+        const s = daftarSoal[i];
+        document.getElementById('materi').value = s.materi;
+        document.getElementById('pertanyaan').value = s.pertanyaan;
+        document.getElementById('opsiA').value = s.opsi[0];
+        document.getElementById('opsiB').value = s.opsi[1];
+        document.getElementById('opsiC').value = s.opsi[2];
+        document.getElementById('opsiD').value = s.opsi[3];
+        document.getElementById('opsiE').value = s.opsi[4];
+        document.getElementById('kunci').value = s.kunci;
+        hapusSoal(i);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // === MODE LATIHAN ===
+      function mulaiLatihan() {
+        if (daftarSoal.length === 0) {
+          alert('Belum ada soal!');
+          return;
+        }
+        modeLatihan.classList.remove('hidden');
+        document.getElementById('daftarSoal').parentElement.classList.add('hidden');
+        indexLatihan = 0;
+        skor = 0;
+        tampilkanSoalLatihan();
+      }
+
+      function tampilkanSoalLatihan() {
+        const s = daftarSoal[indexLatihan];
+        latihanContainer.innerHTML = `
+          <div class="p-4 bg-white rounded shadow">
+            <h3 class="text-lg font-semibold mb-2 text-blue-600">${s.materi}</h3>
+            <p class="mb-4">${s.pertanyaan}</p>
+            ${s.opsi
+              .map((o, idx) => `<button onclick="jawabLatihan('${String.fromCharCode(65 + idx)}')" class="block w-full bg-blue-100 hover:bg-blue-300 text-left px-4 py-2 mb-2 rounded">${String.fromCharCode(65 + idx)}. ${o}</button>`)
+              .join('')}
+          </div>
+        `;
+      }
+
+      function jawabLatihan(jawaban) {
+        const s = daftarSoal[indexLatihan];
+        if (jawaban === s.kunci) skor++;
+
+        indexLatihan++;
+        if (indexLatihan < daftarSoal.length) {
+          tampilkanSoalLatihan();
+        } else {
+          selesaiLatihan();
+        }
+      }
+
+      function selesaiLatihan() {
+        latihanContainer.classList.add('hidden');
+        skorAkhir.classList.remove('hidden');
+        chartContainer.classList.remove('hidden');
+        skorAkhir.textContent = `Skor Akhir: ${skor} / ${daftarSoal.length}`;
+
+        const ctx = document.getElementById('hasilChart');
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Benar', 'Salah'],
+            datasets: [{
+              data: [skor, daftarSoal.length - skor],
+              backgroundColor: ['#60a5fa', '#f87171']
+            }]
+          }
+        });
+      }
+
+      // === EXPORT & IMPORT ===
+      function eksporSoal() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(daftarSoal));
+        const dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute("href", dataStr);
+        dlAnchor.setAttribute("download", "daftarSoal.json");
+        dlAnchor.click();
+      }
+
+      function imporSoal(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = JSON.parse(e.target.result);
+          localStorage.setItem('daftarSoal', JSON.stringify(data));
+          location.reload();
+        };
+        reader.readAsText(file);
+      }
+
+      // === RESET SEMUA DATA ===
+      function resetSemuaData() {
+        if (confirm('Yakin mau hapus semua soal?')) {
+          localStorage.removeItem('daftarSoal');
+          location.reload();
+        }
+      }
+    </script>
+
+  </body>
+</html>
